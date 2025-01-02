@@ -1,11 +1,12 @@
 extern crate printpdf;
 
-use std::convert::From;
+use std::{convert::From, future::IntoFuture, result};
 
-mod s3_resources;
+mod s3;
 
-mod pdf_resources;
-use pdf_resources::{format_clp, format_datetime, CurrentPdf, PdfResources};
+mod pdf;
+use pdf::{format_clp, format_datetime, CurrentPdf, PdfResources};
+use s3::S3Uploader;
 
 use std::cell::RefCell;
 
@@ -387,7 +388,7 @@ pub fn pdf(orden: &IOrder) -> Result<(Vec<u8>, Vec<u8>), String> {
     pdf.end()
 }
 
-pub fn test() {
+pub async fn test() -> String {
     let orden_ejemplo = IOrder {
         comentario: Some("Orden de ejemplo".to_string()),
         items: vec![
@@ -459,5 +460,10 @@ pub fn test() {
         },
     };
 
-    let vects: Result<(Vec<u8>, Vec<u8>), String> = pdf(&orden_ejemplo);
+    let vects: (Vec<u8>, Vec<u8>) = pdf(&orden_ejemplo).unwrap();
+    let mut s3 = S3Uploader::new().await;
+    let result_0 = s3.upload_file(vects.0, "test", "pdf");
+    // let result_1 = s3.upload_file(vects.1, "test", "pdf");
+
+    result_0.await.unwrap()
 }
