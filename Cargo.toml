@@ -1,0 +1,16 @@
+[package]
+name = "pdf-dynamodb-to-s3"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+printpdf = { version = "0.7", features = ["embedded_images"] }
+ttf-parser = "0.25"
+chrono = "0.4"
+
+lambda_http = "0.13.0"
+tokio = { version = "1", features = ["macros"] }
+aws-sdk-dynamodb = "1.57.0"
+aws-sdk-s3 = "1.67.0"
+aws-config = { "1.5.12" , features = ["behavior-version-latest"] }
+dotenv = "0.15.0"
