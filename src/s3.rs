@@ -1,22 +1,23 @@
+// use aws_config::ConfigLoader;
 use aws_config::{self, BehaviorVersion};
 use aws_sdk_s3::Client;
-
+use md5;
 pub struct S3Uploader {
     pub s3_client: Client,
     pub aws_bucket_name: String,
-    pub name_id: u64,
 }
 
 impl S3Uploader {
     pub async fn new() -> Self {
-        let config = aws_config::defaults(BehaviorVersion::latest()).load().await;
-
+        let config = aws_config::defaults(BehaviorVersion::latest())
+            .region("us-east-2")
+            .load()
+            .await;
         let s3_client = aws_sdk_s3::Client::new(&config);
         let aws_bucket_name = String::from("agil");
         Self {
             s3_client,
             aws_bucket_name,
-            name_id: 1, // Inicialización de `name_id`
         }
     }
 
@@ -24,19 +25,20 @@ impl S3Uploader {
         &mut self,
         buffer: Vec<u8>,
         key: &str,
-        file_type: &str,
+        pdf: bool,
     ) -> Result<String, String> {
         if buffer.is_empty() {
             eprintln!("Buffer is undefined or empty");
             return Err("Buffer is undefined or empty".to_string());
         }
 
-        let content_type = match file_type {
-            "pdf" => "application/pdf",
-            _ => "application/octet-stream",
+        let (content_type, dot_type) = if pdf {
+            ("application/pdf", "pdf")
+        } else {
+            ("application/octet-stream", "txt")
         };
-
-        let object_key = format!("{}.{}", key, file_type);
+        let hash_key: String = format!("{:x}", md5::compute(&buffer));
+        let object_key = format!("{}-{}.{}", key, hash_key, dot_type);
 
         // Crear la carga del archivo hacia S3
         let byte_stream: aws_sdk_s3::primitives::ByteStream =

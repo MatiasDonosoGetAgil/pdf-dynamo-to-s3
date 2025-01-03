@@ -1,15 +1,16 @@
 extern crate printpdf;
 use std::convert::From;
 
+use serde::{Deserialize, Serialize};
 mod pdf;
-use pdf::{format_clp, format_datetime, CurrentPdf, PdfResources};
+use pdf::{format_clp, format_datetime, PdfResources};
 
-use std::cell::RefCell;
+// struct MyPayload {
+//     // tus campos...
+//     texto: String,
+// }
 
-struct Pdf {
-    current_pdf: Option<RefCell<CurrentPdf>>,
-}
-
+#[derive(Deserialize, Serialize, Debug)]
 pub struct IOrder {
     pub comentario: Option<String>,
     pub items: Vec<Item>,
@@ -33,6 +34,8 @@ pub struct IOrder {
 }
 
 /// Representa un producto o ítem dentro de la orden.
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Item {
     pub cantidad: f32, // Equivalente a `number` en TS
     pub nombre: String,
@@ -42,6 +45,8 @@ pub struct Item {
 }
 
 /// Representa una opción o modificador de un ítem (equivalente a IOpciones).
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct IOpciones {
     pub modificador: String,
     pub cantidad: i32,
@@ -49,68 +54,90 @@ pub struct IOpciones {
 }
 
 /// Representa un cupón aplicado a la orden.
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Cupon {
     pub codigo: String,
 }
 
 /// Fechas relevantes para la orden, como hora de pago, hora de salida de cocina, etc.
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Fechas {
     pub fecha_salida_cocina_estimada: String,
     pub fecha_entrega_min: String,
-    pub tz: String,
+    // pub tz: String,
     pub fecha_pago: String,
 }
 
 /// Tipo de entrega (por ejemplo, 1 = Delivery, 2 = Retiro en local).
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct TipoEntrega {
     pub id: i32,
 }
 
 /// Información opcional cuando es envío a domicilio.
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct DropOff {
     pub tipo_entrega: Option<String>,
     pub direccion: Option<String>,
 }
 
 /// Información sobre el courier (por ejemplo, IdCourier = -2 cuando es propio).
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Courier {
     pub id_courier: i32,
 }
 
 /// Datos del cliente.
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Cliente {
     pub telefono: Option<String>,
     pub nombre: Option<String>,
-    pub nro: Option<String>,
+    // pub nro: Option<String>,
 }
 
 /// Sucursal (en caso de retiro en tienda).
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Sucursal {
     pub nombre: Option<String>,
 }
 
 /// Plataforma desde donde llega la orden (AGIL, etc.).
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Plataforma {
-    pub codigo: Option<String>,
+    // pub codigo: Option<String>,
     pub nombre: Option<String>,
 }
 
 /// Datos del comercio o restaurante que recibe la orden.
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Comercio {
     pub nombre: Option<String>,
 }
 
 /// Información del pago (medio de pago, etc.).
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Pago {
     pub medio_pago: MedioPago,
 }
 
 /// Medio de pago específico (efectivo, tarjeta, etc.).
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct MedioPago {
     pub nombre: Option<String>,
 }
 
-pub fn pdf(orden: &IOrder) -> Result<(Vec<u8>, Vec<u8>), String> {
+pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     let mut pdf = PdfResources::new();
     let mut y_actual = 0.;
     // CUERPO 0: header
@@ -163,6 +190,12 @@ pub fn pdf(orden: &IOrder) -> Result<(Vec<u8>, Vec<u8>), String> {
     pdf.set_linea(y_actual - 4.0);
     let cliente_nombre = orden.cliente.nombre.as_ref().unwrap();
     y_actual = pdf.set_paragraph(&cliente_nombre, 24.0, y_actual + 4.0, 70.0, 0, false);
+
+    if orden.courier.id_courier == -2 {
+        let cliente_telefono = orden.cliente.telefono.as_ref().unwrap();
+        y_actual = pdf.set_paragraph(&cliente_telefono, 24.0, y_actual + 4.0, 70.0, 0, false);
+    }
+
     // ubicacion
     pdf.set_separacion(y_actual - 4.0, "ubicacion");
     // si es delivery
@@ -377,85 +410,85 @@ pub fn pdf(orden: &IOrder) -> Result<(Vec<u8>, Vec<u8>), String> {
     let power_agil = String::from("powered by Agil");
     pdf.set_paragraph(&power_agil, 12.0, y_actual + 2.0, 80.0, 0, true);
 
-    let reimpreso = String::from("*REIMPRESO*");
-    pdf.set_paragraph(&reimpreso, 16.0, 5.0, 70.0, -1, false);
+    // let reimpreso = String::from("*REIMPRESO*");
+    // pdf.set_paragraph(&reimpreso, 16.0, 5.0, 70.0, -1, false);
     pdf.init_draw();
     pdf.drow_all_obj();
-    pdf.end()
+    pdf.save()
 }
 
-pub async fn test_data() -> (Vec<u8>, Vec<u8>) {
-    let orden_ejemplo: IOrder = IOrder {
-        comentario: Some("Orden de ejemplo".to_string()),
-        items: vec![
-            Item {
-                cantidad: 2.0,
-                nombre: "Pizza Napolitana".to_string(),
-                precio: 2500.0,
-                opciones: Some(vec![
-                    IOpciones {
-                        modificador: "Extra 1".to_string(),
-                        cantidad: 1,
-                        opcion: "Mozzarella".to_string(),
-                    },
-                    IOpciones {
-                        modificador: "Extra 2".to_string(),
-                        cantidad: 1,
-                        opcion: "Piña".to_string(),
-                    },
-                ]),
-                comentario: Some("Sin aceitunas, por favor por favor por favor por favor por favor por favor!!!".to_string()),
-            },
-            Item {
-                cantidad: 5.0,
-                nombre: "πz²a".to_string(),
-                precio: 2500.0,
-                opciones: Some(vec![]),
-                comentario: Some("".to_string()),
-            },
-        ],
-        sub_total: 5000,
-        gastos_envio: 1000,
-        dscto_cupon_gasto_envio: 0.0,
-        dscto_cupon_subtotal: 0.0,
-        dscto_puntos: 0.0,
-        cupones: None,
-        fechas: Fechas {
-            fecha_salida_cocina_estimada: "2024-12-25T14:30:00Z".to_string(),
-            fecha_entrega_min: "2024-12-25T14:31:00Z".to_string(),
-            fecha_pago: "2024-12-25T14:05:00Z".to_string(),
-            tz: "America/Santiago".to_string(),
-        },
-        tipo_entrega: TipoEntrega { id: 1 }, // 1 = Delivery, 2 = Retiro, etc.
-        drop_off: Some(DropOff {
-            tipo_entrega: Some("tipo entrega viene como string".to_string()),
-            direccion: Some("Av Siemrpe Viva 420, titirilquen".to_string()),
-        }),
-        courier: Courier { id_courier: -2 }, // -2 = Reparto Propio, ejemplo
-        cliente: Cliente {
-            telefono: Some("+56 9 1234 5678".to_string()),
-            nombre: Some("Pablo Diego José Francisco de Paula Juan Nepomuceno María de los Remedios Cipriano de la Santísima Trinidad Ruiz y Picasso".to_string()),
-            nro: Some("Depto. 202".to_string()),
-        },
-        sucursal: Some(Sucursal {
-            nombre: Some("algun lado".to_string()), // No aplica si es delivery
-        }),
-        plataforma: Plataforma {
-            codigo: Some("AGIL".to_string()),
-            nombre: Some("Agil".to_string()),
-        },
-        correlativo: 9,
-        codigo: "P42069".to_string(),
-        comercio: Comercio {
-            nombre: Some("La Pizzería".to_string()),
-        },
-        pago: Pago {
-            medio_pago: MedioPago {
-                nombre: Some("Tarjeta".to_string()),
-            },
-        },
-    };
+// pub async fn test_data() -> (Vec<u8>, Vec<u8>) {
+//     let orden_ejemplo: IOrder = IOrder {
+//         comentario: Some("Orden de ejemplo".to_string()),
+//         items: vec![
+//             Item {
+//                 cantidad: 2.0,
+//                 nombre: "Pizza Napolitana".to_string(),
+//                 precio: 2500.0,
+//                 opciones: Some(vec![
+//                     IOpciones {
+//                         modificador: "Extra 1".to_string(),
+//                         cantidad: 1,
+//                         opcion: "Mozzarella".to_string(),
+//                     },
+//                     IOpciones {
+//                         modificador: "Extra 2".to_string(),
+//                         cantidad: 1,
+//                         opcion: "Piña".to_string(),
+//                     },
+//                 ]),
+//                 comentario: Some("Sin aceitunas, por favor por favor por favor por favor por favor por favor!!!".to_string()),
+//             },
+//             Item {
+//                 cantidad: 5.0,
+//                 nombre: "πz²a".to_string(),
+//                 precio: 2500.0,
+//                 opciones: Some(vec![]),
+//                 comentario: Some("".to_string()),
+//             },
+//         ],
+//         sub_total: 5000,
+//         gastos_envio: 1000,
+//         dscto_cupon_gasto_envio: 0.0,
+//         dscto_cupon_subtotal: 0.0,
+//         dscto_puntos: 0.0,
+//         cupones: None,
+//         fechas: Fechas {
+//             fecha_salida_cocina_estimada: "2024-12-25T14:30:00Z".to_string(),
+//             fecha_entrega_min: "2024-12-25T14:31:00Z".to_string(),
+//             fecha_pago: "2024-12-25T14:05:00Z".to_string(),
+//             // tz: "America/Santiago".to_string(),
+//         },
+//         tipo_entrega: TipoEntrega { id: 1 }, // 1 = Delivery, 2 = Retiro, etc.
+//         drop_off: Some(DropOff {
+//             tipo_entrega: Some("tipo entrega viene como string".to_string()),
+//             direccion: Some("Av Siemrpe Viva 420, titirilquen".to_string()),
+//         }),
+//         courier: Courier { id_courier: -2 }, // -2 = Reparto Propio, ejemplo
+//         cliente: Cliente {
+//             telefono: Some("+56 9 1234 5678".to_string()),
+//             nombre: Some("Pablo Diego José Francisco de Paula Juan Nepomuceno María de los Remedios Cipriano de la Santísima Trinidad Ruiz y Picasso".to_string()),
+//             // nro: Some("Depto. 202".to_string()),
+//         },
+//         sucursal: Some(Sucursal {
+//             nombre: Some("algun lado".to_string()), // No aplica si es delivery
+//         }),
+//         plataforma: Plataforma {
+//             // codigo: Some("AGIL".to_string()),
+//             nombre: Some("Agil".to_string()),
+//         },
+//         correlativo: 9,
+//         codigo: "P42069".to_string(),
+//         comercio: Comercio {
+//             nombre: Some("La Pizzería".to_string()),
+//         },
+//         pago: Pago {
+//             medio_pago: MedioPago {
+//                 nombre: Some("Tarjeta".to_string()),
+//             },
+//         },
+//     };
 
-    let data = pdf(&orden_ejemplo).unwrap();
-    data
-}
+//     let data = pdf(&orden_ejemplo).unwrap();
+//     data
+// }

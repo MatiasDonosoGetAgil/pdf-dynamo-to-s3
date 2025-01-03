@@ -5,7 +5,7 @@ use printpdf::path::{PaintMode, WindingOrder};
 use printpdf::*;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::BufWriter;
+use std::vec;
 use ttf_parser::Face;
 
 // const PAGE_WIDTH: f32 = 80.0;
@@ -231,46 +231,50 @@ impl<'a> PdfResources<'a> {
         };
         self.current_pdf = Some(pdf);
     }
-    pub fn end(self) -> Result<(Vec<u8>, Vec<u8>), String> {
+    pub fn save(self) -> Result<Vec<u8>, String> {
         match self.current_pdf {
             Some(use_pdf) => {
-                // Intentar guardar el PDF base
+                // let mut buffer: BufWriter<File> = BufWriter::new(File::create("test.pdf").unwrap());
+                // use_pdf.doc.save(&mut buffer).unwrap();
+                // Ok((Vec::new(), Vec::new()))
+
                 let pdf_base = use_pdf
                     .doc
                     .save_to_bytes()
                     .map_err(|e| format!("Error al guardar el PDF base: {:?}", e))?;
+                Ok(pdf_base)
 
-                // Obtener el último párrafo
-                let p = self
-                    .paragraphs
-                    .last()
-                    .ok_or_else(|| "No se encontró el último párrafo".to_string())?;
+                // // Obtener el último párrafo
+                // let p = self
+                //     .paragraphs
+                //     .last()
+                //     .ok_or_else(|| "No se encontró el último párrafo".to_string())?;
 
-                // Determinar la fuente a usar
-                let font_use: &IndirectFontRef = if p.light {
-                    &use_pdf.font_light
-                } else {
-                    &use_pdf.font_bold
-                };
+                // // Determinar la fuente a usar
+                // let font_use: &IndirectFontRef = if p.light {
+                //     &use_pdf.font_light
+                // } else {
+                //     &use_pdf.font_bold
+                // };
 
-                // Dibujar el párrafo
-                Self::draw_parrafo(
-                    &use_pdf.current_layer,
-                    &p.lines,
-                    self.page_height - p.y_inicial,
-                    p.font_size,
-                    font_use,
-                );
+                // // Dibujar el párrafo
+                // Self::draw_parrafo(
+                //     &use_pdf.current_layer,
+                //     &p.lines,
+                //     self.page_height - p.y_inicial,
+                //     p.font_size,
+                //     font_use,
+                // );
 
-                let mut pdf_reimpreso = pdf_base.clone();
+                // let mut pdf_reimpreso = pdf_base.clone();
 
-                if let Some(new_content) = p.lines.last() {
-                    let additional_bytes = new_content.text.as_bytes();
-                    pdf_reimpreso.extend_from_slice(additional_bytes);
-                } else {
-                    return Err("No se encontró contenido para agregar al PDF".to_string());
-                }
-                Ok((pdf_base, pdf_reimpreso))
+                // if let Some(new_content) = p.lines.last() {
+                //     let additional_bytes = new_content.text.as_bytes();
+                //     pdf_reimpreso.extend_from_slice(additional_bytes);
+                // } else {
+                //     return Err("No se encontró contenido para agregar al PDF".to_string());
+                // }
+                // Ok((pdf_base, pdf_reimpreso))
             }
             None => Err("No se encontró un PDF actual".to_string()),
         }
@@ -282,11 +286,7 @@ impl<'a> PdfResources<'a> {
                 // textos
                 match &self.current_pdf {
                     Some(use_pdf) => {
-                        for (i, p) in self.paragraphs.iter().enumerate() {
-                            if i == self.paragraphs.len() - 1 {
-                                break;
-                            }
-
+                        for p in self.paragraphs.iter() {
                             let font_use: &IndirectFontRef = if p.light {
                                 &use_pdf.font_light
                             } else {
@@ -321,18 +321,6 @@ impl<'a> PdfResources<'a> {
                 print!("Error");
             }
         };
-    }
-
-    pub fn save_pdf(self, path: &str) {
-        match self.current_pdf {
-            Some(use_pdf) => {
-                let mut buffer: BufWriter<File> = BufWriter::new(File::create(path).unwrap());
-                use_pdf.doc.save(&mut buffer).unwrap();
-            }
-            None => {
-                print!("Error");
-            }
-        }
     }
 }
 

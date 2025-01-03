@@ -1702,6 +1702,7 @@ dependencies = [
  "dotenv",
  "lambda_http",
  "lambda_runtime",
+ "md5",
  "printpdf",
  "serde",
  "serde_json",

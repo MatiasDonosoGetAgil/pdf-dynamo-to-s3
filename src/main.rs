@@ -1,17 +1,12 @@
 use lambda_http::{service_fn, Body, Error, Request, RequestPayloadExt as _, Response};
 use s3::S3Uploader;
-use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::Level;
 use tracing_subscriber;
 mod maker;
 mod s3;
-
-#[derive(Deserialize, Serialize, Debug, Clone)]
-struct MyPayload {
-    // tus campos...
-    texto: String,
-}
+use maker::pdf;
+use maker::IOrder;
 
 #[tokio::main]
 async fn main() -> Result<(), Error> {
@@ -24,26 +19,19 @@ async fn main() -> Result<(), Error> {
 
     let func = service_fn(|event: Request| async move {
         // Ejemplo: parsear el body como MyPayload
-        let body = event.payload::<MyPayload>()?;
-
+        let body: Option<IOrder> = event.payload::<IOrder>()?;
         if let Some(payload) = body {
-            let texto = payload.texto;
-            println!("texto: {}", texto);
-
-            let data = maker::test_data();
-            let (vec_1, vec_2) = data.await;
+            // let data = maker::test_data();
+            let pdf_as_vec = pdf(&payload).unwrap();
             let mut s3 = S3Uploader::new().await;
+            let normal = s3
+                .upload_file(pdf_as_vec, payload.IdPedido, true)
+                .await
+                .unwrap();
 
-            println!(
-                "url 1: {}",
-                s3.upload_file(vec_1, "test", "pdf").await.unwrap()
+            let respuesta = json!(
+                { "mensaje": normal }
             );
-            println!(
-                "url 2: {}",
-                s3.upload_file(vec_2, "test", "pdf").await.unwrap()
-            );
-
-            let respuesta = json!({ "mensaje": texto });
             Ok::<_, Error>(Response::new(Body::Text(respuesta.to_string())))
         } else {
             // Manejo de error...
