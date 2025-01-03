@@ -5,136 +5,512 @@ use serde::{Deserialize, Serialize};
 mod pdf;
 use pdf::{format_clp, format_datetime, PdfResources};
 
-// struct MyPayload {
-//     // tus campos...
-//     texto: String,
-// }
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Payload {
+    pub order: IOrder,
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct IOrder {
-    pub comentario: Option<String>,
-    pub items: Vec<Item>,
-    pub dscto_cupon_gasto_envio: f32,
-    pub dscto_cupon_subtotal: f32,
-    pub dscto_puntos: f32,
-    pub cupones: Option<Vec<Cupon>>,
-    pub fechas: Fechas,
-    pub tipo_entrega: TipoEntrega,
-    pub drop_off: Option<DropOff>,
-    pub courier: Courier,
-    pub cliente: Cliente,
-    pub sucursal: Option<Sucursal>,
+    #[serde(rename = "IdPedido")]
+    pub id_pedido: i32,
+    #[serde(rename = "IdSucursal")]
+    pub id_sucursal: i32,
+    #[serde(rename = "IdPublico")]
+    pub id_publico: String,
+    #[serde(rename = "VersionPOS")]
+    pub version_pos: String,
+    #[serde(rename = "Codigo")]
+    pub codigo: String,
+    #[serde(rename = "Correlativo")]
+    pub correlativo: i32,
+    #[serde(rename = "Plataforma")]
     pub plataforma: Plataforma,
-    pub correlativo: i64,
-    pub codigo: String,
-    pub comercio: Comercio,
-    pub pago: Pago,
+    #[serde(rename = "TipoPedido")]
+    pub tipo_pedido: TipoPedido,
+    #[serde(rename = "SubTotal")]
     pub sub_total: i32,
+    #[serde(rename = "GastosEnvio")]
     pub gastos_envio: i32,
-}
-
-/// Representa un producto o ítem dentro de la orden.
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Item {
-    pub cantidad: f32, // Equivalente a `number` en TS
-    pub nombre: String,
-    pub precio: f32,
-    pub opciones: Option<Vec<IOpciones>>,
+    #[serde(rename = "DsctoCuponSubtotal")]
+    pub dscto_cupon_subtotal: f32,
+    #[serde(rename = "DsctoCuponGastoEnvio")]
+    pub dscto_cupon_gasto_envio: f32,
+    #[serde(rename = "DsctoPuntos")]
+    pub dscto_puntos: f32,
+    #[serde(rename = "CuotaServicioAgil")]
+    pub cuota_servicio_agil: f32,
+    #[serde(rename = "Propina")]
+    pub propina: f32,
+    #[serde(rename = "PropinaAgil")]
+    pub propina_agil: f32,
+    #[serde(rename = "TotalOC")]
+    pub total_oc: i32,
+    #[serde(rename = "Comentario")]
     pub comentario: Option<String>,
+    #[serde(rename = "TieneHijos")]
+    pub tiene_hijos: bool,
+    #[serde(rename = "IdPedidoBase")]
+    pub id_pedido_base: Option<String>,
+    #[serde(rename = "IdCarro")]
+    pub id_carro: i32,
+    #[serde(rename = "Estado")]
+    pub estado: Estado,
+    #[serde(rename = "ComentarioFlash")]
+    pub comentario_flash: Option<String>,
+    #[serde(rename = "EstadoDelivery")]
+    pub estado_delivery: EstadoDelivery,
+    #[serde(rename = "isDelivery")]
+    pub is_delivery: bool,
+    #[serde(rename = "isScheduled")]
+    pub is_scheduled: bool,
+    #[serde(rename = "isOwnDelivery")]
+    pub is_own_delivery: bool,
+    #[serde(rename = "TipoFechaEntrega")]
+    pub tipo_fecha_entrega: TipoFechaEntrega,
+    #[serde(rename = "TipoEntrega")]
+    pub tipo_entrega: TipoEntrega,
+    #[serde(rename = "Cupones")]
+    pub cupones: Vec<Cupon>,
+    #[serde(rename = "Pago")]
+    pub pago: Pago,
+    #[serde(rename = "Sucursal")]
+    pub sucursal: Sucursal,
+    #[serde(rename = "Comercio")]
+    pub comercio: Comercio,
+    #[serde(rename = "PickUp")]
+    pub pick_up: PickUp,
+    #[serde(rename = "DropOff")]
+    pub drop_off: DropOff,
+    #[serde(rename = "Courier")]
+    pub courier: Courier,
+    #[serde(rename = "Cliente")]
+    pub cliente: Cliente,
+    #[serde(rename = "Fechas")]
+    pub fechas: Fechas,
+    #[serde(rename = "Items")]
+    pub items: Vec<Item>,
+    #[serde(rename = "Urls")]
+    pub urls: Vec<Url>,
+    #[serde(rename = "Proveedores")]
+    pub proveedores: Vec<String>,
+    #[serde(rename = "AlternativaDelivery")]
+    pub alternativa_delivery: Vec<AlternativaDelivery>,
 }
-
-/// Representa una opción o modificador de un ítem (equivalente a IOpciones).
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct IOpciones {
-    pub modificador: String,
-    pub cantidad: i32,
-    pub opcion: String,
-}
-
-/// Representa un cupón aplicado a la orden.
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Cupon {
-    pub codigo: String,
-}
-
-/// Fechas relevantes para la orden, como hora de pago, hora de salida de cocina, etc.
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Fechas {
-    pub fecha_salida_cocina_estimada: String,
-    pub fecha_entrega_min: String,
-    // pub tz: String,
-    pub fecha_pago: String,
-}
-
-/// Tipo de entrega (por ejemplo, 1 = Delivery, 2 = Retiro en local).
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct TipoEntrega {
-    pub id: i32,
-}
-
-/// Información opcional cuando es envío a domicilio.
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct DropOff {
-    pub tipo_entrega: Option<String>,
-    pub direccion: Option<String>,
-}
-
-/// Información sobre el courier (por ejemplo, IdCourier = -2 cuando es propio).
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Courier {
-    pub id_courier: i32,
-}
-
-/// Datos del cliente.
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Cliente {
-    pub telefono: Option<String>,
-    pub nombre: Option<String>,
-    // pub nro: Option<String>,
-}
-
-/// Sucursal (en caso de retiro en tienda).
-
-#[derive(Deserialize, Serialize, Debug)]
-pub struct Sucursal {
-    pub nombre: Option<String>,
-}
-
-/// Plataforma desde donde llega la orden (AGIL, etc.).
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Plataforma {
-    // pub codigo: Option<String>,
-    pub nombre: Option<String>,
+    #[serde(rename = "Codigo")]
+    pub codigo: String,
+    #[serde(rename = "Logo")]
+    pub logo: String,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
 }
-
-/// Datos del comercio o restaurante que recibe la orden.
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct Comercio {
-    pub nombre: Option<String>,
+pub struct TipoPedido {
+    #[serde(rename = "Codigo")]
+    pub codigo: String,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Prefijo")]
+    pub prefijo: String,
 }
 
-/// Información del pago (medio de pago, etc.).
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Estado {
+    #[serde(rename = "Id")]
+    pub id: i32,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Codigo")]
+    pub codigo: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct EstadoDelivery {
+    #[serde(rename = "Id")]
+    pub id: i32,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Codigo")]
+    pub codigo: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TipoFechaEntrega {
+    #[serde(rename = "Id")]
+    pub id: i32,
+    #[serde(rename = "Tipo")]
+    pub tipo: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TipoEntrega {
+    #[serde(rename = "Id")]
+    pub id: i32,
+    #[serde(rename = "Tipo")]
+    pub tipo: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Cupon {
+    #[serde(rename = "Codigo")]
+    pub codigo: String,
+}
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Pago {
+    #[serde(rename = "IdPublico")]
+    pub id_publico: String,
+    #[serde(rename = "Tarjeta")]
+    pub tarjeta: Option<String>,
+    #[serde(rename = "IdPago")]
+    pub id_pago: i64,
+    #[serde(rename = "MedioPago")]
     pub medio_pago: MedioPago,
+    #[serde(rename = "TipoPago")]
+    pub tipo_pago: TipoPago,
+    #[serde(rename = "EstadoPago")]
+    pub estado_pago: EstadoPago,
+    #[serde(rename = "EstadoReembolso")]
+    pub estado_reembolso: String,
+    #[serde(rename = "FechaReembolso")]
+    pub fecha_reembolso: Option<String>,
+    #[serde(rename = "MontoReembolso")]
+    pub monto_reembolso: Option<f32>,
 }
-
-/// Medio de pago específico (efectivo, tarjeta, etc.).
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct MedioPago {
+    #[serde(rename = "Id")]
+    pub id: i32,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Logo")]
+    pub logo: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct TipoPago {
+    #[serde(rename = "Id")]
+    pub id: i32,
+    #[serde(rename = "Tipo")]
+    pub tipo: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct EstadoPago {
+    #[serde(rename = "Id")]
+    pub id: i32,
+    #[serde(rename = "Estado")]
+    pub estado: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Sucursal {
+    #[serde(rename = "IdSucursal")]
+    pub id_sucursal: i64,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Email")]
+    pub email: String,
+    #[serde(rename = "Telefono")]
+    pub telefono: String,
+    #[serde(rename = "Direccion")]
+    pub direccion: String,
+    #[serde(rename = "Lat")]
+    pub lat: String,
+    #[serde(rename = "Lng")]
+    pub lng: String,
+    #[serde(rename = "Comuna")]
+    pub comuna: String,
+    #[serde(rename = "Ciudad")]
+    pub ciudad: String,
+    #[serde(rename = "Tz")]
+    pub tz: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Comercio {
+    #[serde(rename = "IdComercio")]
+    pub id_comercio: i64,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "CDN")]
+    pub cdn: String,
+    #[serde(rename = "Moneda")]
+    pub moneda: String,
+    #[serde(rename = "Iva")]
+    pub iva: String,
+    #[serde(rename = "Logo")]
+    pub logo: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct PickUp {
+    #[serde(rename = "Lat")]
+    pub lat: String,
+    #[serde(rename = "Lng")]
+    pub lng: String,
+    #[serde(rename = "Direccion")]
+    pub direccion: String,
+    #[serde(rename = "Ciudad")]
+    pub ciudad: String,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Evidencia")]
+    pub evidencia: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct DropOff {
+    #[serde(rename = "Lat")]
+    pub lat: String,
+    #[serde(rename = "Lng")]
+    pub lng: String,
+    #[serde(rename = "Direccion")]
+    pub direccion: String,
+    #[serde(rename = "Ciudad")]
+    pub ciudad: String,
+    #[serde(rename = "Distancia")]
+    pub distancia: i32,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "TipoEntrega")]
+    pub tipo_entrega: String,
+    #[serde(rename = "Evidencia")]
+    pub evidencia: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Courier {
+    #[serde(rename = "IdCourier")]
+    pub id_courier: Option<i32>,
+    #[serde(rename = "Plataforma")]
+    pub plataforma: Option<String>,
+    #[serde(rename = "Logo")]
+    pub logo: Option<String>,
+    #[serde(rename = "IdExterno")]
+    pub id_externo: Option<String>,
+    #[serde(rename = "Llave")]
+    pub llave: i64,
+    #[serde(rename = "IdRider")]
+    pub id_rider: Option<String>,
+    #[serde(rename = "Nombre")]
     pub nombre: Option<String>,
+    #[serde(rename = "Telefono")]
+    pub telefono: Option<String>,
+    #[serde(rename = "Imagen")]
+    pub imagen: String,
+    #[serde(rename = "Lat")]
+    pub lat: String,
+    #[serde(rename = "Lng")]
+    pub lng: String,
+    #[serde(rename = "Distancia")]
+    pub distancia: Option<i32>,
+    #[serde(rename = "Bitacora")]
+    pub bitacora: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Cliente {
+    #[serde(rename = "IdUsuario")]
+    pub id_usuario: i64,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Apellido")]
+    pub apellido: String,
+    #[serde(rename = "Email")]
+    pub email: String,
+    #[serde(rename = "Telefono")]
+    pub telefono: String,
+    #[serde(rename = "PrefijoTelefonico")]
+    pub prefijo_telefonico: i32,
+    #[serde(rename = "Direccion")]
+    pub direccion: String,
+    #[serde(rename = "Lat")]
+    pub lat: String,
+    #[serde(rename = "Lng")]
+    pub lng: String,
+    #[serde(rename = "Nro")]
+    pub nro: Option<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Fechas {
+    #[serde(rename = "Tz")]
+    pub tz: String,
+    #[serde(rename = "FechaCreacion")]
+    pub fecha_creacion: String,
+    #[serde(rename = "FechaPago")]
+    pub fecha_pago: String,
+    #[serde(rename = "FechaAceptacionEstimada")]
+    pub fecha_aceptacion_estimada: String,
+    #[serde(rename = "FechaAceptacionReal")]
+    pub fecha_aceptacion_real: Option<String>,
+    #[serde(rename = "FechaSalidaCocinaEstimada")]
+    pub fecha_salida_cocina_estimada: String,
+    #[serde(rename = "FechaSalidaCocinaReal")]
+    pub fecha_salida_cocina_real: Option<String>,
+    #[serde(rename = "FechaEntregaMin")]
+    pub fecha_entrega_min: String,
+    #[serde(rename = "FechaEntregaMax")]
+    pub fecha_entrega_max: String,
+    #[serde(rename = "FechaEntregaReal")]
+    pub fecha_entrega_real: Option<String>,
+    #[serde(rename = "FechaSolicitudCourierEstimada")]
+    pub fecha_solicitud_courier_estimada: String,
+    #[serde(rename = "FechaSolicitudCourierReal")]
+    pub fecha_solicitud_courier_real: Option<String>,
+    #[serde(rename = "FechaLlegadaCourierEstimada")]
+    pub fecha_llegada_courier_estimada: Option<String>,
+    #[serde(rename = "FechaLlegadaCourierReal")]
+    pub fecha_llegada_courier_real: Option<String>,
+    #[serde(rename = "FechaRechazoMaximoSinCajero")]
+    pub fecha_rechazo_maximo_sin_cajero: Option<String>,
+    #[serde(rename = "FechaRechazoReal")]
+    pub fecha_rechazo_real: Option<String>,
+    #[serde(rename = "FechaModificacion")]
+    pub fecha_modificacion: Option<String>,
+    #[serde(rename = "FechaPrimeraEvidencia")]
+    pub fecha_primera_evidencia: Option<String>,
+    #[serde(rename = "FechaSegundaEvidencia")]
+    pub fecha_segunda_evidencia: Option<String>,
+    #[serde(rename = "TiempoPreparacion")]
+    pub tiempo_preparacion: String,
+    #[serde(rename = "TiempoCocina")]
+    pub tiempo_cocina: String,
+    #[serde(rename = "TiempoDelivery")]
+    pub tiempo_delivery: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Item {
+    #[serde(rename = "IdProducto")]
+    pub id_producto: i64,
+    #[serde(rename = "IdProductoExterno")]
+    pub id_producto_externo: Option<String>,
+    #[serde(rename = "SKU")]
+    pub sku: String,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Descripcion")]
+    pub descripcion: String,
+    #[serde(rename = "Imagen")]
+    pub imagen: String,
+    #[serde(rename = "Categoria")]
+    pub categoria: Vec<Categoria>,
+    #[serde(rename = "Cantidad")]
+    pub cantidad: f32,
+    #[serde(rename = "Precio")]
+    pub precio: String,
+    #[serde(rename = "PrecioFinal")]
+    pub precio_final: String,
+    #[serde(rename = "Total")]
+    pub total: String,
+    #[serde(rename = "TotalFinal")]
+    pub total_final: String,
+    #[serde(rename = "Comentario")]
+    pub comentario: Option<String>,
+    #[serde(rename = "EsAgrupacion")]
+    pub es_agrupacion: Option<bool>,
+    #[serde(rename = "NombreAgrupacion")]
+    pub nombre_agrupacion: Option<String>,
+    #[serde(rename = "CorrelativoAgrupacion")]
+    pub correlativo_agrupacion: i32,
+    #[serde(rename = "opciones")]
+    pub opciones: Vec<IOpciones>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Categoria {
+    #[serde(rename = "IdCategoria")]
+    pub id_categoria: i64,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct IOpciones {
+    #[serde(rename = "Modificador")]
+    pub modificador: String,
+    #[serde(rename = "Cantidad")]
+    pub cantidad: i32,
+    #[serde(rename = "Opcion")]
+    pub opcion: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct Url {
+    #[serde(rename = "Tipo")]
+    pub tipo: String,
+    #[serde(rename = "Url")]
+    pub url: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct AlternativaDelivery {
+    #[serde(rename = "IdCourier")]
+    pub id_courier: i32,
+    #[serde(rename = "Nombre")]
+    pub nombre: String,
+    #[serde(rename = "Total")]
+    pub total: f32,
+    #[serde(rename = "CuotaServicioCourier")]
+    pub cuota_servicio_courier: CuotaServicioCourier,
+    #[serde(rename = "TipoTarifa")]
+    pub tipo_tarifa: Option<String>,
+    #[serde(rename = "Distancia")]
+    pub distancia: Option<i32>,
+    #[serde(rename = "DistanciaTarifaDesde")]
+    pub distancia_tarifa_desde: Option<i32>,
+    #[serde(rename = "DistanciaTarifaHasta")]
+    pub distancia_tarifa_hasta: Option<i32>,
+    #[serde(rename = "PrecioBaseClienteNeto")]
+    pub precio_base_cliente_neto: Option<i32>,
+    #[serde(rename = "PrecioBaseRiderNeto")]
+    pub precio_base_rider_neto: Option<i32>,
+    #[serde(rename = "PrecioExtraCliente")]
+    pub precio_extra_cliente: Option<i32>,
+    #[serde(rename = "PrecioExtraRider")]
+    pub precio_extra_rider: Option<i32>,
+    #[serde(rename = "CuotaServicioAgilNeto")]
+    pub cuota_servicio_agil_neto: Option<i32>,
+    #[serde(rename = "CuotaServicioAgilIva")]
+    pub cuota_servicio_agil_iva: Option<i32>,
+    #[serde(rename = "CuotaServicioAgilBruto")]
+    pub cuota_servicio_agil_bruto: Option<i32>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct CuotaServicioCourier {
+    #[serde(rename = "CuotaServicioNeto")]
+    pub cuota_servicio_neto: Option<i32>,
+    #[serde(rename = "CuotaServicioIva")]
+    pub cuota_servicio_iva: Option<f32>,
+    #[serde(rename = "CuotaServicioBruto")]
+    pub cuota_servicio_bruto: Option<f32>,
+    #[serde(rename = "GastoEnvioNeto")]
+    pub gasto_envio_neto: Option<i32>,
+    #[serde(rename = "GastoEnvioIva")]
+    pub gasto_envio_iva: Option<i32>,
+    #[serde(rename = "GastoEnvioBruto")]
+    pub gasto_envio_bruto: Option<i32>,
+    #[serde(rename = "Desde")]
+    pub desde: Option<i32>,
+    #[serde(rename = "Hasta")]
+    pub hasta: Option<i32>,
+}
+
+// Función auxiliar para deserializar el precio desde String a f32
+fn deserialize_precio<'de, D>(deserializer: D) -> Result<f32, D::Error>
+where
+    D: serde::Deserializer<'de>,
+{
+    let precio_str = String::deserialize(deserializer)?;
+    precio_str.parse::<f32>().map_err(serde::de::Error::custom)
 }
 
 pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
@@ -143,12 +519,12 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     // CUERPO 0: header
 
     // comercio nombre
-    let comercio_nombre = orden.comercio.nombre.as_ref().unwrap();
-    y_actual = pdf.set_paragraph(&comercio_nombre, 20.0, y_actual + 12.0, 70.0, 0, false);
+    let comercio_nombre = &orden.comercio.nombre;
+    y_actual = pdf.set_paragraph(comercio_nombre, 20.0, y_actual + 12.0, 70.0, 0, false);
 
     // plataforma nombre
-    let plataforma_nombre = orden.plataforma.nombre.as_ref().unwrap();
-    y_actual = pdf.set_paragraph(&plataforma_nombre, 16.0, y_actual + 0.0, 70.0, 0, false);
+    let plataforma_nombre = &orden.plataforma.nombre;
+    y_actual = pdf.set_paragraph(plataforma_nombre, 16.0, y_actual + 0.0, 70.0, 0, false);
     // moto
     if orden.tipo_entrega.id == 1 {
         pdf.set_img(5.0, y_actual + 4.0, 10.0, 10.0, "moto");
@@ -157,7 +533,7 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     }
 
     // nuestro (si es reparto propio)
-    if orden.courier.id_courier == -2 {
+    if matches!(orden.courier.id_courier, Some(-2)) {
         let nuestro_string = String::from("*NUESTRO*");
         let nuestro: &String = &nuestro_string;
         pdf.set_paragraph(&nuestro, 16.0, y_actual + 10.0, 70.0, -1, false);
@@ -188,12 +564,11 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     y_actual += 5.0;
     // Cliente nombre
     pdf.set_linea(y_actual - 4.0);
-    let cliente_nombre = orden.cliente.nombre.as_ref().unwrap();
-    y_actual = pdf.set_paragraph(&cliente_nombre, 24.0, y_actual + 4.0, 70.0, 0, false);
+    y_actual = pdf.set_paragraph(&orden.cliente.nombre, 24.0, y_actual + 4.0, 70.0, 0, false);
 
-    if orden.courier.id_courier == -2 {
-        let cliente_telefono = orden.cliente.telefono.as_ref().unwrap();
-        y_actual = pdf.set_paragraph(&cliente_telefono, 24.0, y_actual + 4.0, 70.0, 0, false);
+    if matches!(orden.courier.id_courier, Some(-2)) {
+        let cliente_telefono = &orden.cliente.telefono;
+        y_actual = pdf.set_paragraph(cliente_telefono, 24.0, y_actual + 4.0, 70.0, 0, false);
     }
 
     // ubicacion
@@ -201,19 +576,13 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     // si es delivery
     y_actual += 4.0;
     let direccion = if orden.tipo_entrega.id == 1 {
-        orden.drop_off.as_ref().unwrap().direccion.as_ref().unwrap() as &String
+        &orden.drop_off.direccion
     } else {
-        orden.sucursal.as_ref().unwrap().nombre.as_ref().unwrap() as &String
+        &orden.sucursal.nombre
     };
-    y_actual = pdf.set_paragraph(&direccion, 14.0, y_actual + 5.0, 50.0, 0, false);
-    let tipo_entrega = orden
-        .drop_off
-        .as_ref()
-        .unwrap()
-        .tipo_entrega
-        .as_ref()
-        .unwrap();
-    y_actual = pdf.set_paragraph(&tipo_entrega, 14.0, y_actual + 3.0, 80.0, 0, true);
+    y_actual = pdf.set_paragraph(direccion, 14.0, y_actual + 5.0, 50.0, 0, false);
+    let tipo_entrega = &orden.drop_off.tipo_entrega;
+    y_actual = pdf.set_paragraph(tipo_entrega, 14.0, y_actual + 3.0, 80.0, 0, true);
 
     // hora pago
     let static_hora_pago = String::from("Hora de Pago");
@@ -257,11 +626,11 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
             -1,
             false,
         );
-        let num_precio = (item.precio * item.cantidad) as i32;
+        let num_precio = (item.precio.parse::<f32>().unwrap() * item.cantidad) as i32;
         precio_total += num_precio;
         let precio = format_clp(num_precio);
         y_actual = pdf.set_paragraph(&precio, 13.0, y_actual + 5.0, 70.0, 1, false);
-        for modi in item.opciones.as_ref().unwrap() {
+        for modi in &item.opciones {
             y_actual = pdf.set_paragraph(
                 &("- ".to_string() + &modi.modificador),
                 13.0,
@@ -279,23 +648,24 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
                 true,
             );
         }
-        if item.comentario.as_ref().unwrap() != "" {
-            let ped_inicio_rect = y_actual - 3.0;
-            // comentario cliente
-            let static_comentario_cliente = String::from(" Comentario del Cliente: ");
-            y_actual = pdf.set_paragraph(
-                &static_comentario_cliente,
-                14.0,
-                y_actual + 2.0,
-                60.0,
-                -2,
-                false,
-            );
-            // agregar comillas dobles al final e inicio del texto
-            let ped_comentario: String =
-                " \"".to_string() + item.comentario.as_ref().unwrap() + "\"";
-            y_actual = pdf.set_paragraph(&ped_comentario, 16.0, y_actual + 1.0, 68.0, 0, true);
-            pdf.set_rect(ped_inicio_rect, y_actual - 2.0);
+        if let Some(comentario) = &item.comentario {
+            if comentario != "" {
+                let ped_inicio_rect = y_actual - 3.0;
+                // comentario cliente
+                let static_comentario_cliente = String::from(" Comentario del Cliente: ");
+                y_actual = pdf.set_paragraph(
+                    &static_comentario_cliente,
+                    14.0,
+                    y_actual + 2.0,
+                    60.0,
+                    -2,
+                    false,
+                );
+                // agregar comillas dobles al final e inicio del texto
+                let ped_comentario: String = " \"".to_string() + comentario + "\"";
+                y_actual = pdf.set_paragraph(&ped_comentario, 16.0, y_actual + 1.0, 68.0, 0, true);
+                pdf.set_rect(ped_inicio_rect, y_actual - 2.0);
+            }
         }
     }
 
@@ -308,7 +678,7 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
                 orden.dscto_cupon_gasto_envio,
                 true,
                 "Descuento (".to_string()
-                    + &orden.cupones.as_ref().unwrap()[0].codigo
+                    + &orden.cupones[0].codigo
                     + ")",
             )
         } else if orden.dscto_cupon_subtotal > 0.0 {
@@ -404,8 +774,8 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     y_actual = pdf.set_paragraph(&disclaimer, 9.0, y_actual + 1.0, 70.0, -1, true);
 
     // medio de pago
-    let medio_pago = orden.pago.medio_pago.nombre.as_ref().unwrap();
-    y_actual = pdf.set_paragraph(&medio_pago, 16.0, y_actual + 5.0, 70.0, 1, false);
+    let medio_pago = &orden.pago.medio_pago.nombre;
+    y_actual = pdf.set_paragraph(medio_pago, 16.0, y_actual + 5.0, 70.0, 1, false);
 
     let power_agil = String::from("powered by Agil");
     pdf.set_paragraph(&power_agil, 12.0, y_actual + 2.0, 80.0, 0, true);
