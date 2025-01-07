@@ -3,6 +3,13 @@ name = "pdf-dynamodb-to-s3"
 version = "0.1.0"
 edition = "2021"
 
+[build]
+include = [
+    "assets/**/*",
+    "src/**/*",
+    "Cargo.toml",
+]
+
 [dependencies]
 printpdf = { version = "0.7", features = ["embedded_images"] }
 ttf-parser = "0.25"
@@ -20,4 +27,6 @@ serde_json = "1.0"
 tracing = "0.1"
 tracing-subscriber = "0.3"
 async-trait = "0.1.84"
-md5 = "0.7.0"
+lazy_static = "1.4"
+escpos = "0.13.1"
+unicode-normalization = "0.1.24"

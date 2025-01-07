@@ -1,15 +1,44 @@
-extern crate printpdf;
 use chrono::DateTime;
 use printpdf::path::{PaintMode, WindingOrder};
-
 use printpdf::*;
 use std::collections::HashMap;
-use std::fs::File;
+use std::io::Cursor;
 use std::vec;
 use ttf_parser::Face;
 
 // const PAGE_WIDTH: f32 = 80.0;
 const DPI: f32 = 300.0;
+
+// Definimos los bytes de las fuentes directamente
+const FONT_BOLD: &[u8] = include_bytes!("../../assets/fonts/segoe-ui-bold.ttf");
+const FONT_LIGHT: &[u8] = include_bytes!("../../assets/fonts/segoe-ui.ttf");
+
+// Definimos los bytes de las imágenes directamente
+const ICON_CAMINO: &[u8] = include_bytes!("../../assets/img/camino.bmp");
+const ICON_CUBIERTOS: &[u8] = include_bytes!("../../assets/img/cubiertos.bmp");
+const ICON_DINERO: &[u8] = include_bytes!("../../assets/img/dinero.bmp");
+const ICON_MOTO: &[u8] = include_bytes!("../../assets/img/moto.bmp");
+const ICON_PESO: &[u8] = include_bytes!("../../assets/img/peso.bmp");
+const ICON_UBICACION: &[u8] = include_bytes!("../../assets/img/ubicacion.bmp");
+
+lazy_static! {
+    static ref IMAGES: HashMap<&'static str, &'static [u8]> = {
+        let mut m = HashMap::new();
+        m.insert("camino", ICON_CAMINO);
+        m.insert("cubiertos", ICON_CUBIERTOS);
+        m.insert("dinero", ICON_DINERO);
+        m.insert("moto", ICON_MOTO);
+        m.insert("peso", ICON_PESO);
+        m.insert("ubicacion", ICON_UBICACION);
+        m
+    };
+    static ref FONTS: HashMap<&'static str, &'static [u8]> = {
+        let mut m = HashMap::new();
+        m.insert("bold", FONT_BOLD);
+        m.insert("light", FONT_LIGHT);
+        m
+    };
+}
 
 pub struct ParagraphData {
     pub lines: Vec<ParrafoLine>,
@@ -56,8 +85,11 @@ pub struct PdfResources<'a> {
 
 impl<'a> PdfResources<'a> {
     pub fn new() -> Self {
-        let bold_data: &[u8] = include_bytes!("../../assets/fonts/segoe-ui-bold.ttf") as &[u8];
-        let face_bold: Face<'_> = Face::parse(bold_data, 0).expect("No se pudo cargar la fuente");
+        let bold_data = FONTS
+            .get("bold")
+            .expect("No se pudo encontrar la fuente bold");
+        let face_bold: Face<'_> =
+            Face::parse(bold_data, 0).expect("No se pudo cargar la fuente bold");
         let upem_bold: f32 = face_bold.units_per_em() as f32;
 
         let bold: FontData = FontData {
@@ -66,12 +98,15 @@ impl<'a> PdfResources<'a> {
             face: face_bold,
         };
 
-        let ligth_data: &[u8] = include_bytes!("../../assets/fonts/segoe-ui.ttf") as &[u8];
-        let face_light: Face<'_> = Face::parse(ligth_data, 0).expect("No se pudo cargar la fuente");
+        let light_data = FONTS
+            .get("light")
+            .expect("No se pudo encontrar la fuente light");
+        let face_light: Face<'_> =
+            Face::parse(light_data, 0).expect("No se pudo cargar la fuente light");
         let upem_light: f32 = face_light.units_per_em() as f32;
 
         let light: FontData = FontData {
-            font_vec: ligth_data,
+            font_vec: light_data,
             upem: upem_light,
             face: face_light,
         };
@@ -88,39 +123,35 @@ impl<'a> PdfResources<'a> {
     }
     pub fn set_img(&mut self, x: f32, y: f32, mm_x: f32, mm_y: f32, icono: &str) {
         fn px_to_mm(px: f32) -> f32 {
-            // There are 25.4 millimeters in an inch.
-            let mm = (px / DPI) * 25.4;
-            mm as f32
+            (px / DPI) * 25.4
         }
 
-        let path_icono = "assets/img/".to_owned() + icono + ".bmp";
-
-        let mut image_file = File::open(path_icono).unwrap();
-        let img: Image =
-            Image::try_from(image_crate::codecs::bmp::BmpDecoder::new(&mut image_file).unwrap())
-                .unwrap();
+        // En lugar de abrir el archivo, usamos los bytes incluidos
+        let image_bytes = IMAGES.get(icono).expect("Imagen no encontrada");
+        let img = Image::try_from(
+            image_crate::codecs::bmp::BmpDecoder::new(Cursor::new(image_bytes))
+                .expect("Error al decodificar imagen"),
+        )
+        .expect("Error al crear imagen");
 
         let base_scale_x = px_to_mm(img.image.width.0 as f32);
         let base_scale_y = px_to_mm(img.image.height.0 as f32);
 
-        // println!("{}[px] X {}[px]", img.image.width.0, img.image.height.0);
-        // println!(" {}[mm] x {}[mm]", base_scale_x, base_scale_y,);
-        // scale_x * base_scale_x = mm_x
         let scale_x = mm_x / base_scale_x;
         let scale_y = mm_y / base_scale_y;
 
-        let image_transform: Box<dyn Fn(f32) -> ImageTransform> = Box::new(move |height: f32| {
-            ImageTransform {
+        let image_transform: Box<dyn Fn(f32) -> ImageTransform> =
+            Box::new(move |height: f32| ImageTransform {
                 translate_x: Some(Mm(x)),
                 translate_y: Some(Mm(height - y)),
                 rotate: None,
-                scale_x: Some(scale_x), // Usa los valores capturados
-                scale_y: Some(scale_y), // Usa los valores capturados
+                scale_x: Some(scale_x),
+                scale_y: Some(scale_y),
                 dpi: Some(DPI),
-            }
-        });
+            });
+
         let img_save = ImagePreMake {
-            img: img,
+            img,
             trans: image_transform,
         };
 
@@ -543,3 +574,144 @@ pub fn set_linea_vertical(
     });
     (pol_l, pol_r)
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_fonts_included() {
+        let bold_font = include_bytes!("../../assets/fonts/segoe-ui-bold.ttf");
+        let light_font = include_bytes!("../../assets/fonts/segoe-ui.ttf");
+
+        assert!(!bold_font.is_empty(), "Bold font data should not be empty");
+        assert!(
+            !light_font.is_empty(),
+            "Light font data should not be empty"
+        );
+    }
+}
+
+/*
+
+const getTicketKitchen = async ({ order, isCopy }) => {
+    const tz = order.Fechas.Tz
+    const _currencyFormatterOptions = currencyFormatterOptions['CLP']
+    const address = order.PickUp.Direccion.split(',')[0]
+
+
+    const encoder = new EscPosEncoder()
+    const totalCharWitdth = 33
+    const totalCharWitdthDoubleSize = Math.floor(totalCharWitdth / 2)
+    const spaces = ' '.repeat(totalCharWitdth)
+    const separator = '-'.repeat(totalCharWitdth)
+
+    const bufferHexDoubleSize = turn => [0x1b, 0x21, turn ? 48 : 0]
+    const bufferHexDoubleHeight = turn => [0x1b, 0x21, turn ? 16 : 0]
+
+    encoder
+        .initialize()
+        .align('center')
+        .size('small')
+        .line(order.Comercio.Nombre)
+        .size('normal')
+        .size('small')
+        .line(order.Plataforma.Nombre)
+        .size('normal')
+        .line(separator)
+        .raw(bufferHexDoubleSize(true))
+        .bold(true)
+        .line(order.TipoEntrega.Id === 1 ? 'DELIVERY' : 'RETIRO')
+        .bold(false)
+        .raw(bufferHexDoubleSize(false))
+        // hora salida cocina
+        .line(separator)
+        .align('left')
+        .line('Salida Cocina')
+        .align('right')
+        .raw(bufferHexDoubleSize(true))
+        .line(moment.tz(order.Fechas.FechaSalidaCocinaEstimada, tz).format('HH:mm'))
+        .raw(bufferHexDoubleSize(false))
+        // correlativo
+        .align('center')
+        .line(separator)
+        .raw(bufferHexDoubleSize(true))
+        .bold(true)
+        .line(order.Correlativo > 0 && order.Plataforma.Codigo === 'AGIL' ? order.Correlativo : '')
+        .bold(false)
+        .raw(bufferHexDoubleSize(false))
+        //codigo + corelativo
+        .line(separator)
+        .raw(bufferHexDoubleSize(true))
+        .bold(true)
+        .line(`#${order.Codigo}${order.Correlativo > 0 ? `-${order.Correlativo}` : ''}`)
+        .bold(false)
+        .raw(bufferHexDoubleSize(false))
+        // cliente
+        .align('center')
+        .line(separator)
+        .bold(true)
+        .raw(bufferHexDoubleSize(true))
+        .line(`${order.Cliente.Nombre} ${order.Cliente.Apellido || ''}`)
+        .raw(bufferHexDoubleSize(false))
+        .bold(false)
+        .line(separator)
+    if (order.Comentario) {
+        encoder.bold(true).line('Comentario del Cliente:')
+            .bold(false).line(`"${eliminarDiacriticos(order.Comentario)}"`)
+            .raw(bufferHexDoubleSize(false))
+            .bold(false)
+            .line(separator)
+    }
+
+    order.Items.forEach(item => {
+        encoder.align('left')
+            .raw(bufferHexDoubleHeight(true))
+            .bold(true)
+            .line(`${item.Cantidad} X ${eliminarDiacriticos(item.Nombre)}`) // .toUpperCase()
+            .bold(false)
+            .raw(bufferHexDoubleHeight(false));
+
+        item.opciones.map(opt => {
+            encoder
+                .line(`-${eliminarDiacriticos(opt.Modificador)}`)
+                .line(`${opt.Cantidad} X ${eliminarDiacriticos(opt.Opcion)}`)
+        })
+
+        encoder.line(spaces)
+        if (item.Comentario) {
+            encoder.bold(true).line('Comentario del Producto:')
+                .bold(false).line(`"${eliminarDiacriticos(item.Comentario)}"`).line(spaces)
+        }
+
+    })
+
+    encoder
+        .align('center')
+        .line(separator)
+        .line('     ')
+        .line('     ')
+        .line('     ')
+        .line('     ')
+        .line('     ')
+        .line('     ')
+        .cut('partial')
+        .align('left')
+    // console.log(encoder.encode())
+    const fileBuffer = Buffer.from(encoder.encode().buffer)
+
+    const { Location } = await S3.upload({
+        Bucket: process.env.S3_BUCKET,
+        Key: getS3KeyTicketOrder({ order, format: 'KITCHEN', extension: 'txt', isCopy }),
+        Body: fileBuffer,
+        ACL: 'public-read',
+    })
+        .promise()
+        .catch(err => {
+            // console.error('UPLOAD FILE S3 ERR', err)
+            return { Location: null }
+        })
+
+    return Location
+}
+
+
+*/

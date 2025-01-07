@@ -1,16 +1,21 @@
 extern crate printpdf;
 use std::convert::From;
 
+use chrono::{DateTime, Local};
+use escpos::printer::Printer;
+use unicode_normalization::char::is_combining_mark;
+use unicode_normalization::UnicodeNormalization;
+
 use serde::{Deserialize, Serialize};
 mod pdf;
 use pdf::{format_clp, format_datetime, PdfResources};
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Payload {
     pub order: IOrder,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct IOrder {
     #[serde(rename = "IdPedido")]
     pub id_pedido: i32,
@@ -98,7 +103,7 @@ pub struct IOrder {
     pub alternativa_delivery: Vec<AlternativaDelivery>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Plataforma {
     #[serde(rename = "Codigo")]
     pub codigo: String,
@@ -108,7 +113,7 @@ pub struct Plataforma {
     pub nombre: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TipoPedido {
     #[serde(rename = "Codigo")]
     pub codigo: String,
@@ -118,7 +123,7 @@ pub struct TipoPedido {
     pub prefijo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Estado {
     #[serde(rename = "Id")]
     pub id: i32,
@@ -128,7 +133,7 @@ pub struct Estado {
     pub codigo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct EstadoDelivery {
     #[serde(rename = "Id")]
     pub id: i32,
@@ -138,7 +143,7 @@ pub struct EstadoDelivery {
     pub codigo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TipoFechaEntrega {
     #[serde(rename = "Id")]
     pub id: i32,
@@ -146,7 +151,7 @@ pub struct TipoFechaEntrega {
     pub tipo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TipoEntrega {
     #[serde(rename = "Id")]
     pub id: i32,
@@ -154,13 +159,13 @@ pub struct TipoEntrega {
     pub tipo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Cupon {
     #[serde(rename = "Codigo")]
     pub codigo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Pago {
     #[serde(rename = "IdPublico")]
     pub id_publico: String,
@@ -182,7 +187,7 @@ pub struct Pago {
     pub monto_reembolso: Option<f32>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct MedioPago {
     #[serde(rename = "Id")]
     pub id: i32,
@@ -192,7 +197,7 @@ pub struct MedioPago {
     pub logo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct TipoPago {
     #[serde(rename = "Id")]
     pub id: i32,
@@ -200,7 +205,7 @@ pub struct TipoPago {
     pub tipo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct EstadoPago {
     #[serde(rename = "Id")]
     pub id: i32,
@@ -208,7 +213,7 @@ pub struct EstadoPago {
     pub estado: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Sucursal {
     #[serde(rename = "IdSucursal")]
     pub id_sucursal: i64,
@@ -232,7 +237,7 @@ pub struct Sucursal {
     pub tz: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Comercio {
     #[serde(rename = "IdComercio")]
     pub id_comercio: i64,
@@ -248,7 +253,7 @@ pub struct Comercio {
     pub logo: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct PickUp {
     #[serde(rename = "Lat")]
     pub lat: String,
@@ -264,7 +269,7 @@ pub struct PickUp {
     pub evidencia: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct DropOff {
     #[serde(rename = "Lat")]
     pub lat: String,
@@ -284,7 +289,7 @@ pub struct DropOff {
     pub evidencia: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Courier {
     #[serde(rename = "IdCourier")]
     pub id_courier: Option<i32>,
@@ -314,7 +319,7 @@ pub struct Courier {
     pub bitacora: Vec<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Cliente {
     #[serde(rename = "IdUsuario")]
     pub id_usuario: i64,
@@ -338,7 +343,7 @@ pub struct Cliente {
     pub nro: Option<String>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Fechas {
     #[serde(rename = "Tz")]
     pub tz: String,
@@ -386,7 +391,7 @@ pub struct Fechas {
     pub tiempo_delivery: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Item {
     #[serde(rename = "IdProducto")]
     pub id_producto: i64,
@@ -424,7 +429,7 @@ pub struct Item {
     pub opciones: Vec<IOpciones>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Categoria {
     #[serde(rename = "IdCategoria")]
     pub id_categoria: i64,
@@ -432,7 +437,7 @@ pub struct Categoria {
     pub nombre: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct IOpciones {
     #[serde(rename = "Modificador")]
     pub modificador: String,
@@ -442,7 +447,7 @@ pub struct IOpciones {
     pub opcion: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct Url {
     #[serde(rename = "Tipo")]
     pub tipo: String,
@@ -450,7 +455,7 @@ pub struct Url {
     pub url: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct AlternativaDelivery {
     #[serde(rename = "IdCourier")]
     pub id_courier: i32,
@@ -484,7 +489,7 @@ pub struct AlternativaDelivery {
     pub cuota_servicio_agil_bruto: Option<i32>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct CuotaServicioCourier {
     #[serde(rename = "CuotaServicioNeto")]
     pub cuota_servicio_neto: Option<i32>,
@@ -504,16 +509,257 @@ pub struct CuotaServicioCourier {
     pub hasta: Option<i32>,
 }
 
-// Función auxiliar para deserializar el precio desde String a f32
-fn deserialize_precio<'de, D>(deserializer: D) -> Result<f32, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    let precio_str = String::deserialize(deserializer)?;
-    precio_str.parse::<f32>().map_err(serde::de::Error::custom)
+struct EscPos {
+    buffer: Vec<u8>,
 }
 
-pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
+#[derive(Debug)]
+pub enum EscPosError {
+    IoError(std::io::Error),
+    EncodingError(String),
+}
+
+impl From<std::io::Error> for EscPosError {
+    fn from(error: std::io::Error) -> Self {
+        EscPosError::IoError(error)
+    }
+}
+
+impl EscPos {
+    pub fn new() -> Self {
+        let mut printer = Self { buffer: Vec::new() };
+        printer.buffer.extend_from_slice(&[0x1B, 0x40]); // ESC @
+        printer
+    }
+
+    pub fn align_left(&mut self) -> &mut Self {
+        self.buffer.extend_from_slice(&[0x1B, 0x61, 0x00]); // ESC a 0
+        self
+    }
+
+    pub fn align_center(&mut self) -> &mut Self {
+        self.buffer.extend_from_slice(&[0x1B, 0x61, 0x01]); // ESC a 1
+        self
+    }
+
+    pub fn align_right(&mut self) -> &mut Self {
+        self.buffer.extend_from_slice(&[0x1B, 0x61, 0x02]); // ESC a 2
+        self
+    }
+
+    pub fn emphasis(&mut self, on: bool) -> &mut Self {
+        self.buffer
+            .extend_from_slice(&[0x1B, 0x45, if on { 1 } else { 0 }]); // ESC E n
+        self
+    }
+
+    pub fn double_height(&mut self, on: bool) -> &mut Self {
+        self.buffer
+            .extend_from_slice(&[0x1B, 0x21, if on { 16 } else { 0 }]); // ESC ! n
+        self
+    }
+
+    pub fn double_size(&mut self, on: bool) -> &mut Self {
+        self.buffer
+            .extend_from_slice(&[0x1B, 0x21, if on { 48 } else { 0 }]); // ESC ! n
+        self
+    }
+
+    pub fn small_text(&mut self) -> &mut Self {
+        self.buffer.extend_from_slice(&[0x1B, 0x4D, 0x01]); // ESC M n
+        self
+    }
+
+    pub fn normal_text(&mut self) -> &mut Self {
+        self.buffer.extend_from_slice(&[0x1B, 0x4D, 0x00]); // ESC M n
+        self
+    }
+
+    pub fn feed(&mut self, lines: u8) -> &mut Self {
+        self.buffer.extend_from_slice(&[0x1B, 0x64, lines]); // ESC d n
+        self
+    }
+
+    pub fn cut(&mut self) -> &mut Self {
+        self.buffer.extend_from_slice(&[0x1D, 0x56, 0x01]); // GS V n (partial cut)
+        self
+    }
+
+    pub fn text(&mut self, text: &str) -> &mut Self {
+        self.buffer.extend_from_slice(text.as_bytes());
+        self.buffer.extend_from_slice(b"\n"); // Agregar salto de línea automático
+        self
+    }
+
+    pub fn spaces(&mut self, count: usize) -> &mut Self {
+        self.buffer.extend_from_slice(" ".repeat(count).as_bytes());
+        self.buffer.extend_from_slice(b"\n");
+        self
+    }
+
+    pub fn into_vec(self) -> Vec<u8> {
+        self.buffer
+    }
+}
+
+fn eliminar_diacriticos(texto: &str) -> String {
+    texto
+        .nfd()
+        .filter(|c| !is_combining_mark(*c))
+        .collect::<String>()
+}
+
+pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> {
+    let total_char_width = 33;
+    let total_char_width_double_size = total_char_width / 2;
+    let spaces = " ".repeat(total_char_width);
+    let separator = "-".repeat(total_char_width);
+    let mut printer = EscPos::new();
+
+    // Header
+    printer
+        .align_center()
+        .small_text()
+        .text(&order.comercio.nombre)
+        .normal_text()
+        .small_text()
+        .text(&order.plataforma.nombre)
+        .normal_text()
+        .text(&separator);
+
+    // Entrega
+    printer
+        .double_size(true)
+        .emphasis(true)
+        .text(if order.tipo_entrega.id == 1 {
+            "DELIVERY"
+        } else {
+            "RETIRO"
+        })
+        .emphasis(false)
+        .double_size(false)
+        .text(&separator);
+
+    // Salida cocina
+    printer
+        .align_left()
+        .text("Salida Cocina")
+        .align_right()
+        .double_size(true)
+        .text(&format!(
+            "{}",
+            DateTime::parse_from_rfc3339(&order.fechas.fecha_creacion) // ojo
+                .unwrap()
+                .with_timezone(&Local)
+                .format("%H:%M")
+        ))
+        .double_size(false);
+
+    // Correlativo
+    printer
+        .align_center()
+        .text(&separator)
+        .double_size(true)
+        .emphasis(true)
+        .text(&order.correlativo.to_string())
+        .emphasis(false)
+        .double_size(false)
+        .text(&separator);
+
+    // Código
+    printer
+        .double_size(true)
+        .emphasis(true)
+        .text(&format!(
+            "#{}{}",
+            order.codigo,
+            if order.correlativo > 0 {
+                format!("-{}", order.correlativo)
+            } else {
+                "".to_string()
+            }
+        ))
+        .emphasis(false)
+        .double_size(false);
+
+    // Cliente
+    printer
+        .align_center()
+        .text(&separator)
+        .emphasis(true)
+        .double_size(true)
+        .text(&format!(
+            "{} {}",
+            order.cliente.nombre, order.cliente.apellido
+        ))
+        .double_size(false)
+        .emphasis(false)
+        .text(&separator);
+
+    // Comentario del cliente
+    if let Some(comentario) = &order.comentario {
+        printer
+            .emphasis(true)
+            .text("Comentario del Cliente:")
+            .emphasis(false)
+            .text(&format!("\"{}\"", eliminar_diacriticos(comentario)))
+            .double_size(false)
+            .emphasis(false)
+            .text(&separator);
+    }
+
+    // Items
+    for item in &order.items {
+        printer
+            .align_left()
+            .double_height(true)
+            .emphasis(true)
+            .text(&format!(
+                "{} X {}",
+                item.cantidad,
+                eliminar_diacriticos(&item.nombre).to_uppercase()
+            ))
+            .emphasis(false)
+            .double_height(false);
+
+        for opt in &item.opciones {
+            printer
+                .text(&format!("-{}", eliminar_diacriticos(&opt.modificador)))
+                .text(&format!(
+                    "{} X {}",
+                    opt.cantidad,
+                    eliminar_diacriticos(&opt.opcion)
+                ));
+        }
+
+        printer.text(&spaces);
+        if let Some(comentario) = &item.comentario {
+            printer
+                .emphasis(true)
+                .text("Comentario del Producto:")
+                .emphasis(false)
+                .text(&format!("\"{}\"", eliminar_diacriticos(comentario)))
+                .text(&spaces);
+        }
+    }
+
+    // Final del ticket
+    printer
+        .align_center()
+        .text(&separator)
+        .spaces(5)
+        .spaces(5)
+        .spaces(5)
+        .spaces(5)
+        .spaces(5)
+        .spaces(5)
+        .cut()
+        .align_left();
+
+    Ok(printer.into_vec())
+}
+
+pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> {
     let mut pdf = PdfResources::new();
     let mut y_actual = 0.;
     // CUERPO 0: header
@@ -545,7 +791,7 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     if entrega_programada {
         correlativo_string.insert(0, 'P');
         // prgramado
-        let programado_string = String::from("PROGRAMADO");
+        let programado_string = String::from("PROG");
         pdf.set_paragraph(&programado_string, 16.0, y_actual + 18.0, 70.0, -1, false);
     }
 
@@ -780,85 +1026,13 @@ pub fn pdf(orden: &IOrder) -> Result<Vec<u8>, String> {
     let power_agil = String::from("powered by Agil");
     pdf.set_paragraph(&power_agil, 12.0, y_actual + 2.0, 80.0, 0, true);
 
-    // let reimpreso = String::from("*REIMPRESO*");
-    // pdf.set_paragraph(&reimpreso, 16.0, 5.0, 70.0, -1, false);
+    if is_copy {
+        let reimpreso = String::from("*REIMPRESO*");
+        // Agregamos tu texto o cualquier otro contenido necesario:
+        pdf.set_paragraph(&reimpreso, 16.0, 5.0, 70.0, -1, false);
+    }
+
     pdf.init_draw();
     pdf.drow_all_obj();
     pdf.save()
 }
-
-// pub async fn test_data() -> (Vec<u8>, Vec<u8>) {
-//     let orden_ejemplo: IOrder = IOrder {
-//         comentario: Some("Orden de ejemplo".to_string()),
-//         items: vec![
-//             Item {
-//                 cantidad: 2.0,
-//                 nombre: "Pizza Napolitana".to_string(),
-//                 precio: 2500.0,
-//                 opciones: Some(vec![
-//                     IOpciones {
-//                         modificador: "Extra 1".to_string(),
-//                         cantidad: 1,
-//                         opcion: "Mozzarella".to_string(),
-//                     },
-//                     IOpciones {
-//                         modificador: "Extra 2".to_string(),
-//                         cantidad: 1,
-//                         opcion: "Piña".to_string(),
-//                     },
-//                 ]),
-//                 comentario: Some("Sin aceitunas, por favor por favor por favor por favor por favor por favor!!!".to_string()),
-//             },
-//             Item {
-//                 cantidad: 5.0,
-//                 nombre: "πz²a".to_string(),
-//                 precio: 2500.0,
-//                 opciones: Some(vec![]),
-//                 comentario: Some("".to_string()),
-//             },
-//         ],
-//         sub_total: 5000,
-//         gastos_envio: 1000,
-//         dscto_cupon_gasto_envio: 0.0,
-//         dscto_cupon_subtotal: 0.0,
-//         dscto_puntos: 0.0,
-//         cupones: None,
-//         fechas: Fechas {
-//             fecha_salida_cocina_estimada: "2024-12-25T14:30:00Z".to_string(),
-//             fecha_entrega_min: "2024-12-25T14:31:00Z".to_string(),
-//             fecha_pago: "2024-12-25T14:05:00Z".to_string(),
-//             // tz: "America/Santiago".to_string(),
-//         },
-//         tipo_entrega: TipoEntrega { id: 1 }, // 1 = Delivery, 2 = Retiro, etc.
-//         drop_off: Some(DropOff {
-//             tipo_entrega: Some("tipo entrega viene como string".to_string()),
-//             direccion: Some("Av Siemrpe Viva 420, titirilquen".to_string()),
-//         }),
-//         courier: Courier { id_courier: -2 }, // -2 = Reparto Propio, ejemplo
-//         cliente: Cliente {
-//             telefono: Some("+56 9 1234 5678".to_string()),
-//             nombre: Some("Pablo Diego José Francisco de Paula Juan Nepomuceno María de los Remedios Cipriano de la Santísima Trinidad Ruiz y Picasso".to_string()),
-//             // nro: Some("Depto. 202".to_string()),
-//         },
-//         sucursal: Some(Sucursal {
-//             nombre: Some("algun lado".to_string()), // No aplica si es delivery
-//         }),
-//         plataforma: Plataforma {
-//             // codigo: Some("AGIL".to_string()),
-//             nombre: Some("Agil".to_string()),
-//         },
-//         correlativo: 9,
-//         codigo: "P42069".to_string(),
-//         comercio: Comercio {
-//             nombre: Some("La Pizzería".to_string()),
-//         },
-//         pago: Pago {
-//             medio_pago: MedioPago {
-//                 nombre: Some("Tarjeta".to_string()),
-//             },
-//         },
-//     };
-
-//     let data = pdf(&orden_ejemplo).unwrap();
-//     data
-// }

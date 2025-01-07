@@ -1,0 +1,3 @@
+[build]
+# Asegura que los assets se copien al directorio de build
+target-dir = "target"
