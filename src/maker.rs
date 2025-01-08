@@ -2,7 +2,6 @@ extern crate printpdf;
 use std::convert::From;
 
 use chrono::{DateTime, Local};
-use escpos::printer::Printer;
 use unicode_normalization::char::is_combining_mark;
 use unicode_normalization::UnicodeNormalization;
 
@@ -514,6 +513,7 @@ struct EscPos {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum EscPosError {
     IoError(std::io::Error),
     EncodingError(String),
@@ -574,7 +574,7 @@ impl EscPos {
         self.buffer.extend_from_slice(&[0x1B, 0x4D, 0x00]); // ESC M n
         self
     }
-
+    #[allow(dead_code)]
     pub fn feed(&mut self, lines: u8) -> &mut Self {
         self.buffer.extend_from_slice(&[0x1B, 0x64, lines]); // ESC d n
         self
@@ -596,7 +596,12 @@ impl EscPos {
         self.buffer.extend_from_slice(b"\n");
         self
     }
-
+    pub fn separator(&mut self, count: usize) -> &mut Self {
+        self.buffer.extend_from_slice("-".repeat(count).as_bytes());
+        self.buffer.extend_from_slice(b"\n");
+        self.spaces(count);
+        self
+    }
     pub fn into_vec(self) -> Vec<u8> {
         self.buffer
     }
@@ -611,11 +616,18 @@ fn eliminar_diacriticos(texto: &str) -> String {
 
 pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> {
     let total_char_width = 33;
-    let total_char_width_double_size = total_char_width / 2;
-    let spaces = " ".repeat(total_char_width);
-    let separator = "-".repeat(total_char_width);
+    // let total_char_width_double_size = total_char_width / 2;
+    // let spaces = " ".repeat(total_char_width);
+    // let separator = "-".repeat(total_char_width);
     let mut printer = EscPos::new();
-
+    // Reimpreso
+    if is_copy {
+        printer
+            .align_center()
+            .small_text()
+            .text("REIMPRESO")
+            .separator(total_char_width);
+    }
     // Header
     printer
         .align_center()
@@ -625,7 +637,9 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
         .small_text()
         .text(&order.plataforma.nombre)
         .normal_text()
-        .text(&separator);
+        // .text(&separator)
+        .separator(total_char_width)
+        .spaces(total_char_width);
 
     // Entrega
     printer
@@ -638,7 +652,8 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
         })
         .emphasis(false)
         .double_size(false)
-        .text(&separator);
+        // .text(&separator)
+        .separator(total_char_width);
 
     // Salida cocina
     printer
@@ -648,7 +663,7 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
         .double_size(true)
         .text(&format!(
             "{}",
-            DateTime::parse_from_rfc3339(&order.fechas.fecha_creacion) // ojo
+            DateTime::parse_from_rfc3339(&order.fechas.fecha_salida_cocina_estimada) // ojo
                 .unwrap()
                 .with_timezone(&Local)
                 .format("%H:%M")
@@ -658,13 +673,15 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
     // Correlativo
     printer
         .align_center()
-        .text(&separator)
+        // .text(&separator)
+        .separator(total_char_width)
         .double_size(true)
         .emphasis(true)
         .text(&order.correlativo.to_string())
         .emphasis(false)
         .double_size(false)
-        .text(&separator);
+        // .text(&separator)
+        .separator(total_char_width);
 
     // Código
     printer
@@ -685,7 +702,8 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
     // Cliente
     printer
         .align_center()
-        .text(&separator)
+        // .text(&separator)
+        .separator(total_char_width)
         .emphasis(true)
         .double_size(true)
         .text(&format!(
@@ -694,7 +712,8 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
         ))
         .double_size(false)
         .emphasis(false)
-        .text(&separator);
+        // .text(&separator)
+        .separator(total_char_width);
 
     // Comentario del cliente
     if let Some(comentario) = &order.comentario {
@@ -705,7 +724,8 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
             .text(&format!("\"{}\"", eliminar_diacriticos(comentario)))
             .double_size(false)
             .emphasis(false)
-            .text(&separator);
+            // .text(&separator)
+            .separator(total_char_width);
     }
 
     // Items
@@ -732,21 +752,24 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
                 ));
         }
 
-        printer.text(&spaces);
+        // printer.text(&spaces);
         if let Some(comentario) = &item.comentario {
             printer
+                .spaces(total_char_width) //
                 .emphasis(true)
                 .text("Comentario del Producto:")
                 .emphasis(false)
                 .text(&format!("\"{}\"", eliminar_diacriticos(comentario)))
-                .text(&spaces);
+                // .text(&spaces);
+                .spaces(total_char_width);
         }
     }
 
     // Final del ticket
     printer
         .align_center()
-        .text(&separator)
+        // .text(&separator)
+        .separator(total_char_width)
         .spaces(5)
         .spaces(5)
         .spaces(5)
@@ -784,7 +807,11 @@ pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> 
         let nuestro: &String = &nuestro_string;
         pdf.set_paragraph(&nuestro, 16.0, y_actual + 10.0, 70.0, -1, false);
     }
-    let entrega_programada = true;
+    let entrega_programada = if orden.tipo_fecha_entrega.id == 1 {
+        false
+    } else {
+        true
+    };
     // correlativo
     // si es programado entonces se antepone el "P" al codigo
     let mut correlativo_string = orden.correlativo.to_string();
@@ -844,19 +871,21 @@ pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> 
     y_actual = pdf.set_paragraph(&str_fecha_entrega, 14.0, y_actual + 1.0, 70.0, 1, true);
     let inicio_rect = y_actual - 3.0;
     // comentario cliente
-    let static_comentario_cliente = String::from(" Comentario del Cliente: ");
-    y_actual = pdf.set_paragraph(
-        &static_comentario_cliente,
-        14.0,
-        y_actual + 2.0,
-        60.0,
-        -2,
-        false,
-    );
-    // agregar comillas dobles al final e inicio del texto
-    let comentario: String = " \"".to_string() + orden.comentario.as_ref().unwrap() + "\"";
+    if let Some(comentario_cliente) = orden.comentario.as_ref() {
+        let static_comentario_cliente = String::from(" Comentario del Cliente: ");
+        y_actual = pdf.set_paragraph(
+            &static_comentario_cliente,
+            14.0,
+            y_actual + 2.0,
+            60.0,
+            -2,
+            false,
+        );
+        // agregar comillas dobles al final e inicio del texto
+        let comentario: String = " \"".to_string() + comentario_cliente + "\"";
 
-    y_actual = pdf.set_paragraph(&comentario, 16.0, y_actual + 1.0, 68.0, 0, true);
+        y_actual = pdf.set_paragraph(&comentario, 16.0, y_actual + 1.0, 68.0, 0, true);
+    }
     pdf.set_rect(inicio_rect, y_actual - 2.0);
     y_actual += 2.0;
     pdf.set_separacion(y_actual, "cubiertos");
@@ -864,7 +893,11 @@ pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> 
     y_actual += 5.0;
     // CUERPO 2: pedidos
     for item in &orden.items {
-        pdf.set_paragraph(
+        let num_precio = (item.precio.parse::<f32>().unwrap() * item.cantidad) as i32;
+        precio_total += num_precio;
+        let precio = format_clp(num_precio);
+        pdf.set_paragraph(&precio, 13.0, y_actual + 5.0, 70.0, 1, false);
+        y_actual = pdf.set_paragraph(
             &(item.cantidad.to_string() + " X " + &item.nombre),
             13.0,
             y_actual + 5.0,
@@ -872,10 +905,6 @@ pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> 
             -1,
             false,
         );
-        let num_precio = (item.precio.parse::<f32>().unwrap() * item.cantidad) as i32;
-        precio_total += num_precio;
-        let precio = format_clp(num_precio);
-        y_actual = pdf.set_paragraph(&precio, 13.0, y_actual + 5.0, 70.0, 1, false);
         for modi in &item.opciones {
             y_actual = pdf.set_paragraph(
                 &("- ".to_string() + &modi.modificador),
