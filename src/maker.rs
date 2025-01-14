@@ -901,7 +901,7 @@ pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> 
             &(item.cantidad.to_string() + " X " + &item.nombre),
             13.0,
             y_actual + 5.0,
-            70.0,
+            60.0,
             -1,
             false,
         );
