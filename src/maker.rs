@@ -849,7 +849,7 @@ pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> 
     // si es delivery
     y_actual += 4.0;
     let direccion = if orden.tipo_entrega.id == 1 {
-        &orden.drop_off.direccion
+        &orden.drop_off.direccion.split(',').next().unwrap_or("")
     } else {
         &orden.sucursal.nombre
     };
