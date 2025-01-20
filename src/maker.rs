@@ -741,7 +741,8 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
                 item.cantidad,
                 eliminar_diacriticos(&item.nombre).to_uppercase()
             ))
-            .emphasis(false);
+            .emphasis(false)
+            .double_height(false);
 
         for opt in &item.opciones {
             printer
@@ -750,8 +751,7 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
                     "  {} X {}",
                     opt.cantidad,
                     eliminar_diacriticos(&opt.opcion)
-                ))
-                .spaces(total_char_width);
+                ));
         }
 
         // printer.text(&spaces);
@@ -763,6 +763,7 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
                 .emphasis(false)
                 .text(&format!("\"{}\"", eliminar_diacriticos(comentario)))
                 // .text(&spaces);
+                .spaces(total_char_width / 2)
                 .spaces(total_char_width / 2);
         }
     }
@@ -770,7 +771,6 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
     // Final del ticket
     printer
         .align_center()
-        .double_height(false)
         .double_size(false)
         // .text(&separator)
         .separator(total_char_width)
