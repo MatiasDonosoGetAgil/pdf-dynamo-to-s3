@@ -745,9 +745,9 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
 
         for opt in &item.opciones {
             printer
-                .text(&format!(" - {}", eliminar_diacriticos(&opt.modificador)))
+                .text(&format!("  - {}", eliminar_diacriticos(&opt.modificador)))
                 .text(&format!(
-                    " {} X {}",
+                    "  {} X {}",
                     opt.cantidad,
                     eliminar_diacriticos(&opt.opcion)
                 ))
