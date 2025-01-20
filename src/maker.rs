@@ -580,7 +580,7 @@ impl EscPos {
         self
     }
 
-    pub fn cut(&mut self) -> &mut Self {
+    pub fn partial_cut(&mut self) -> &mut Self {
         self.buffer.extend_from_slice(&[0x1D, 0x56, 0x01]); // GS V n (partial cut)
         self
     }
@@ -615,7 +615,7 @@ fn eliminar_diacriticos(texto: &str) -> String {
 }
 
 pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> {
-    let total_char_width = 33;
+    let total_char_width = 40;
     // let total_char_width_double_size = total_char_width / 2;
     // let spaces = " ".repeat(total_char_width);
     // let separator = "-".repeat(total_char_width);
@@ -630,6 +630,7 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
     }
     // Header
     printer
+        .partial_cut()
         .align_center()
         .small_text()
         .text(&order.comercio.nombre)
@@ -658,7 +659,7 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
     // Salida cocina
     printer
         .align_left()
-        .text("Salida Cocina")
+        .text(" Salida Cocina")
         .align_right()
         .double_size(true)
         .text(&format!(
@@ -733,41 +734,44 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
         printer
             .align_left()
             .double_height(true)
+            .double_size(true)
             .emphasis(true)
             .text(&format!(
-                "{} X {}",
+                " {} X {}",
                 item.cantidad,
                 eliminar_diacriticos(&item.nombre).to_uppercase()
             ))
-            .emphasis(false)
-            .double_height(false);
+            .emphasis(false);
 
         for opt in &item.opciones {
             printer
-                .text(&format!("-{}", eliminar_diacriticos(&opt.modificador)))
+                .text(&format!(" - {}", eliminar_diacriticos(&opt.modificador)))
                 .text(&format!(
-                    "{} X {}",
+                    " {} X {}",
                     opt.cantidad,
                     eliminar_diacriticos(&opt.opcion)
-                ));
+                ))
+                .spaces(total_char_width);
         }
 
         // printer.text(&spaces);
         if let Some(comentario) = &item.comentario {
             printer
-                .spaces(total_char_width) //
+                .spaces(total_char_width / 2) //
                 .emphasis(true)
                 .text("Comentario del Producto:")
                 .emphasis(false)
                 .text(&format!("\"{}\"", eliminar_diacriticos(comentario)))
                 // .text(&spaces);
-                .spaces(total_char_width);
+                .spaces(total_char_width / 2);
         }
     }
 
     // Final del ticket
     printer
         .align_center()
+        .double_height(false)
+        .double_size(false)
         // .text(&separator)
         .separator(total_char_width)
         .spaces(5)
@@ -776,7 +780,7 @@ pub fn get_ticket_kitchen(order: &IOrder, is_copy: bool) -> Result<Vec<u8>, Stri
         .spaces(5)
         .spaces(5)
         .spaces(5)
-        .cut()
+        .partial_cut()
         .align_left();
 
     Ok(printer.into_vec())
@@ -851,7 +855,7 @@ pub fn get_ticket_pdf(orden: &IOrder, is_copy: bool) -> Result<Vec<u8>, String> 
     let direccion = if orden.tipo_entrega.id == 1 {
         &orden.drop_off.direccion.split(',').next().unwrap_or("")
     } else {
-        &orden.sucursal.nombre
+        orden.sucursal.nombre.as_str()
     };
     y_actual = pdf.set_paragraph(direccion, 14.0, y_actual + 5.0, 50.0, 0, false);
     let tipo_entrega = &orden.drop_off.tipo_entrega;
